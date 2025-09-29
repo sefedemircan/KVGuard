@@ -1,5 +1,3 @@
-import { ObjectId } from 'mongodb';
-
 // Tespit edilen kişisel veri türleri
 export enum PersonalDataType {
   TC_KIMLIK = 'TC_KIMLIK',
@@ -25,9 +23,9 @@ export interface DetectedPersonalData {
   confidence: number; // 0-1 arası güven skoru
 }
 
-// Dosya işleme kaydı
+// Dosya işleme kaydı (Supabase uyumlu)
 export interface ProcessedFile {
-  _id?: ObjectId;
+  id?: string; // UUID from Supabase
   fileName: string;
   fileType: string;
   fileSize: number;
@@ -39,12 +37,14 @@ export interface ProcessedFile {
   userId?: string; // Kullanıcı kimliği (opsiyonel)
   status: 'processing' | 'completed' | 'error';
   errorMessage?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-// Denetim logu
+// Denetim logu (Supabase uyumlu)
 export interface AuditLog {
-  _id?: ObjectId;
-  fileId: ObjectId;
+  id?: string; // UUID from Supabase
+  fileId: string; // UUID reference to processed_files
   fileName: string;
   dataType: PersonalDataType;
   originalValue: string;
@@ -55,11 +55,12 @@ export interface AuditLog {
   timestamp: Date;
   ipAddress?: string;
   userAgent?: string;
+  createdAt?: Date;
 }
 
-// İstatistik verisi
+// İstatistik verisi (Supabase uyumlu)
 export interface Statistics {
-  _id?: ObjectId;
+  id?: string; // UUID from Supabase
   date: Date;
   totalFilesProcessed: number;
   totalDataDetected: number;
@@ -68,4 +69,6 @@ export interface Statistics {
   };
   averageConfidence: number;
   processingTimeMs: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

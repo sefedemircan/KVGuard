@@ -1,5 +1,6 @@
-import { createWorker, Worker } from 'tesseract.js';
-import * as pdfParse from 'pdf-parse';
+// Dynamic imports to avoid build issues
+// import { createWorker, Worker } from 'tesseract.js';
+// import * as pdfParse from 'pdf-parse';
 
 export interface OCRResult {
   text: string;
@@ -8,20 +9,26 @@ export interface OCRResult {
 }
 
 export class OCREngine {
-  private worker: Worker | null = null;
+  private worker: any | null = null;
   
   // Tesseract.js worker'ını başlat
-  private async initializeWorker(): Promise<Worker> {
+  private async initializeWorker(): Promise<any> {
     if (this.worker) return this.worker;
     
-    this.worker = await createWorker('tur+eng'); // Türkçe + İngilizce dil desteği
-    
-    await this.worker.setParameters({
-      tessedit_char_whitelist: 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZabcçdefgğhıijklmnoöprsştuüvyz0123456789.,!?()[]{}/@#$%^&*-+=_~|\\:;"\'<> \n\t',
-      preserve_interword_spaces: '1',
-    });
-    
-    return this.worker;
+    try {
+      const { createWorker } = await import('tesseract.js');
+      this.worker = await createWorker('tur+eng'); // Türkçe + İngilizce dil desteği
+      
+      await this.worker.setParameters({
+        tessedit_char_whitelist: 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZabcçdefgğhıijklmnoöprsştuüvyz0123456789.,!?()[]{}/@#$%^&*-+=_~|\\:;"\'<> \n\t',
+        preserve_interword_spaces: '1',
+      });
+      
+      return this.worker;
+    } catch (error) {
+      console.error('Failed to initialize Tesseract worker:', error);
+      throw new Error('OCR engine initialization failed');
+    }
   }
   
   // PDF dosyasından metin çıkar
@@ -29,7 +36,8 @@ export class OCREngine {
     const startTime = Date.now();
     
     try {
-      const data = await pdfParse(buffer);
+      const pdfParse = await import('pdf-parse');
+      const data = await pdfParse.default(buffer);
       
       return {
         text: data.text,

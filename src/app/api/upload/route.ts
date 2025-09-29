@@ -1,82 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PersonalDataType } from '@/lib/models';
+import { DetectionEngine } from '@/lib/detection/detection-engine';
+import { OCREngine } from '@/lib/ocr/ocr-engine';
+import { DatabaseService } from '@/lib/supabase';
+import { PersonalDataType, ProcessedFile, AuditLog } from '@/lib/models';
 
-// Basit regex patterns for testing
-const SIMPLE_PATTERNS = {
-  TC_KIMLIK: /\b[1-9]\d{10}\b/g,
-  IBAN: /\bTR\d{24}\b/gi,
-  TELEFON: /(\+90|0)?\s?(\(\d{3}\)|\d{3})\s?\d{3}\s?\d{2}\s?\d{2}/g,
-  EMAIL: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
-  KREDI_KARTI: /\b\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\b/g
-};
-
-function maskValue(value: string, type: string): string {
-  switch (type) {
-    case 'TC_KIMLIK':
-      return `${value.slice(0, 3)}****${value.slice(-3)}`;
-    case 'IBAN':
-      return `${value.slice(0, 8)}****${value.slice(-4)}`;
-    case 'TELEFON':
-      const cleaned = value.replace(/\D/g, '');
-      return `${cleaned.slice(0, 3)}****${cleaned.slice(-2)}`;
-    case 'EMAIL':
-      const [local, domain] = value.split('@');
-      const maskedLocal = local.length > 2 
-        ? `${local.slice(0, 2)}****${local.slice(-1)}`
-        : '****';
-      return `${maskedLocal}@${domain}`;
-    case 'KREDI_KARTI':
-      const cleanedCard = value.replace(/\s/g, '');
-      return `${cleanedCard.slice(0, 4)} **** **** ${cleanedCard.slice(-4)}`;
-    default:
-      return '*'.repeat(value.length);
-  }
-}
-
-function detectPersonalData(text: string) {
-  const detected: any[] = [];
-  
-  Object.entries(SIMPLE_PATTERNS).forEach(([type, pattern]) => {
-    let match;
-    const regex = new RegExp(pattern.source, pattern.flags);
-    
-    while ((match = regex.exec(text)) !== null) {
-      const originalValue = match[0];
-      detected.push({
-        type: PersonalDataType[type as keyof typeof PersonalDataType],
-        originalValue,
-        maskedValue: maskValue(originalValue, type),
-        position: {
-          start: match.index,
-          end: match.index + originalValue.length
-        },
-        confidence: 0.9
-      });
-    }
-  });
-  
-  return detected;
-}
-
-function applyMasking(text: string, detected: any[]): string {
-  let maskedText = text;
-  
-  // Sondan başlayarak maskeleme uygula
-  const sortedByPosition = detected.sort((a, b) => b.position.start - a.position.start);
-  
-  for (const item of sortedByPosition) {
-    maskedText = maskedText.slice(0, item.position.start) + 
-                item.maskedValue + 
-                maskedText.slice(item.position.end);
-  }
-  
-  return maskedText;
-}
+// Lazy initialize engines to avoid startup errors
 
 export async function POST(request: NextRequest) {
+  console.log('Upload API called');
+  let processedFile: ProcessedFile | null = null;
+  let ocrEngine: OCREngine | null = null;
+
   try {
+    console.log('Parsing form data...');
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    console.log('File received:', file?.name, file?.type, file?.size);
     
     if (!file) {
       return NextResponse.json(
@@ -93,59 +32,235 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Dosya türü kontrolü
+    if (!OCREngine.isSupportedFileType(file.type, file.name)) {
+      return NextResponse.json(
+        { error: 'Desteklenmeyen dosya türü' },
+        { status: 400 }
+      );
+    }
     
     const startTime = Date.now();
     const buffer = Buffer.from(await file.arrayBuffer());
-    const fileId = 'mock-file-' + Date.now();
+    
+    console.log('Initializing engines...');
+    // Initialize engines here to catch any errors
+    const detectionEngine = new DetectionEngine();
+    ocrEngine = new OCREngine();
+    
+    // İlk olarak veritabanına processing durumunda kayıt oluştur
+    const uploadDate = new Date();
+    processedFile = {
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      uploadDate: uploadDate,
+      processedDate: uploadDate,
+      originalText: '',
+      maskedText: '',
+      detectedData: [],
+      status: 'processing'
+    };
+
+    console.log('Creating database record...');
+    // Veritabanına kaydet
+    const dbRecord = await DatabaseService.createProcessedFile(processedFile);
+    const fileId = dbRecord.id as string;
+    console.log('Database record created:', fileId);
     
     try {
-      // Basit metin çıkarma
-      let text = '';
-      if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.csv')) {
-        text = buffer.toString('utf-8');
-      } else {
-        // Diğer dosya türleri için placeholder
-        text = `[${file.name} dosyasından çıkarılan metin]
-        
-Bu bir test dosyasıdır. Gerçek OCR işlemi için:
-- TC: 12345678901
-- Telefon: 0532 123 45 67
-- Email: test@example.com
-- IBAN: TR33 0006 1005 1978 6457 8413 26
-- Kredi Kartı: 4532 1234 5678 9012`;
-      }
+      console.log('Starting OCR extraction...');
+      // OCR ile metin çıkar
+      const ocrResult = await ocrEngine.extractText(buffer, file.type, file.name);
+      console.log('OCR completed, text length:', ocrResult.text.length);
       
+      console.log('Starting detection...');
       // Kişisel verileri tespit et
-      const detectedData = detectPersonalData(text);
-      const maskedText = applyMasking(text, detectedData);
+      const detectionResult = await detectionEngine.detect(ocrResult.text);
+      console.log('Detection completed, found:', detectionResult.detectedData.length, 'items');
+      
+      const processedDate = new Date();
       const processingTimeMs = Date.now() - startTime;
       
-      console.log('Mock: File processed successfully', {
+      // Veritabanı kaydını güncelle
+      const updatedRecord = await DatabaseService.updateProcessedFile(fileId, {
+        originalText: ocrResult.text,
+        maskedText: detectionResult.maskedText,
+        detectedData: detectionResult.detectedData,
+        status: 'completed',
+        processedDate: processedDate
+      });
+
+      // Her tespit edilen veri için audit log oluştur
+      const clientIP = request.headers.get('x-forwarded-for') || 
+                       request.headers.get('x-real-ip') || 
+                       'unknown';
+      const userAgent = request.headers.get('user-agent') || 'unknown';
+
+      for (const detectedItem of detectionResult.detectedData) {
+        const auditLog: AuditLog = {
+          fileId: fileId,
+          fileName: file.name,
+          dataType: detectedItem.type,
+          originalValue: detectedItem.originalValue,
+          maskedValue: detectedItem.maskedValue,
+          detectionMethod: 'hybrid', // Hem regex hem NLP kullanıyoruz
+          confidence: detectedItem.confidence,
+          timestamp: processedDate,
+          ipAddress: clientIP,
+          userAgent: userAgent
+        };
+        
+        try {
+          await DatabaseService.createAuditLog(auditLog);
+        } catch (auditError) {
+          console.error('Audit log creation failed:', auditError);
+          // Audit log hatası ana işlemi durdurmasın
+        }
+      }
+
+      // İstatistikleri güncelle
+      try {
+        await updateDailyStatistics(processedDate, detectionResult.detectedData, processingTimeMs);
+      } catch (statsError) {
+        console.error('Statistics update failed:', statsError);
+        // İstatistik hatası ana işlemi durdurmasın
+      }
+      
+      console.log('File processed successfully', {
+        fileId: fileId,
         fileName: file.name,
-        detectedDataCount: detectedData.length,
-        processingTime: processingTimeMs
+        detectedDataCount: detectionResult.detectedData.length,
+        processingTime: processingTimeMs,
+        ocrConfidence: ocrResult.confidence
       });
       
       return NextResponse.json({
         success: true,
         fileId: fileId,
-        originalText: text,
-        maskedText: maskedText,
-        detectedData: detectedData,
-        ocrConfidence: file.type === 'text/plain' ? 1.0 : 0.8,
+        originalText: ocrResult.text,
+        maskedText: detectionResult.maskedText,
+        detectedData: detectionResult.detectedData,
+        ocrConfidence: ocrResult.confidence,
         processingTimeMs: processingTimeMs
       });
       
     } catch (processingError) {
       console.error('Processing error:', processingError);
+      
+      // Hata durumunu veritabanına kaydet
+      if (fileId) {
+        try {
+          await DatabaseService.updateProcessedFile(fileId, {
+            status: 'error',
+            errorMessage: processingError instanceof Error ? processingError.message : 'Bilinmeyen hata'
+          });
+        } catch (dbError) {
+          console.error('Failed to update error status in database:', dbError);
+        }
+      }
+      
       throw processingError;
     }
     
   } catch (error) {
     console.error('Upload error:', error);
+    
+    // Detaylı hata bilgisi
+    let errorMessage = 'Dosya işlenirken hata oluştu';
+    let errorDetails = '';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = error.stack || '';
+      console.error('Error details:', errorDetails);
+    }
+    
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Dosya işlenirken hata oluştu' },
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+      },
       { status: 500 }
     );
+    } finally {
+      // OCR engine cleanup
+      try {
+        if (ocrEngine) {
+          await ocrEngine.cleanup();
+        }
+      } catch (cleanupError) {
+        console.error('OCR cleanup error:', cleanupError);
+      }
+    }
+}
+
+// İstatistikleri güncelleme fonksiyonu
+async function updateDailyStatistics(date: Date, detectedData: any[], processingTimeMs: number) {
+  const today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  // Veri türü breakdown'unu hazırla
+  const dataTypeBreakdown: { [key in PersonalDataType]: number } = {
+    [PersonalDataType.TC_KIMLIK]: 0,
+    [PersonalDataType.IBAN]: 0,
+    [PersonalDataType.TELEFON]: 0,
+    [PersonalDataType.KREDI_KARTI]: 0,
+    [PersonalDataType.ADRES]: 0,
+    [PersonalDataType.ISIM]: 0,
+    [PersonalDataType.SAGLIK_VERISI]: 0,
+    [PersonalDataType.EMAIL]: 0,
+    [PersonalDataType.DOGUM_TARIHI]: 0
+  };
+
+  // Tespit edilen verileri say
+  detectedData.forEach(item => {
+    if (item.type && item.type in dataTypeBreakdown) {
+      dataTypeBreakdown[item.type as PersonalDataType]++;
+    }
+  });
+
+  // Ortalama güven skorunu hesapla
+  const averageConfidence = detectedData.length > 0 
+    ? detectedData.reduce((sum, item) => sum + item.confidence, 0) / detectedData.length
+    : 0;
+
+  // Mevcut günün istatistiklerini al
+  const existingStats = await DatabaseService.getStatistics(today, today);
+  
+  if (existingStats && existingStats.length > 0) {
+    // Mevcut istatistikleri güncelle
+    const current = existingStats[0] as any;
+    const newTotalFiles = current.total_files_processed + 1;
+    const newTotalData = current.total_data_detected + detectedData.length;
+    
+    // Veri türü breakdown'unu güncelle
+    const currentBreakdown = current.data_type_breakdown || {};
+    Object.entries(dataTypeBreakdown).forEach(([type, count]) => {
+      currentBreakdown[type] = (currentBreakdown[type] || 0) + count;
+    });
+    
+    // Ortalama güven ve işlem süresini güncelle
+    const newAverageConfidence = ((current.average_confidence * (newTotalFiles - 1)) + averageConfidence) / newTotalFiles;
+    const newProcessingTime = ((current.processing_time_ms * (newTotalFiles - 1)) + processingTimeMs) / newTotalFiles;
+
+    await DatabaseService.createOrUpdateStatistics({
+      date: today,
+      totalFilesProcessed: newTotalFiles,
+      totalDataDetected: newTotalData,
+      dataTypeBreakdown: currentBreakdown,
+      averageConfidence: newAverageConfidence,
+      processingTimeMs: Math.round(newProcessingTime)
+    });
+  } else {
+    // Yeni istatistik kaydı oluştur
+    await DatabaseService.createOrUpdateStatistics({
+      date: today,
+      totalFilesProcessed: 1,
+      totalDataDetected: detectedData.length,
+      dataTypeBreakdown: dataTypeBreakdown,
+      averageConfidence: averageConfidence,
+      processingTimeMs: processingTimeMs
+    });
   }
 }

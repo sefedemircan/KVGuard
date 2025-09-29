@@ -17,7 +17,8 @@ import {
   Alert,
   ActionIcon,
   Tooltip,
-  rem
+  rem,
+  useMantineColorScheme
 } from '@mantine/core';
 import {
   IconShield,
@@ -25,11 +26,15 @@ import {
   IconChartBar,
   IconDownload,
   IconRefresh,
-  IconAlertTriangle
+  IconAlertTriangle,
+  IconSun,
+  IconMoon
 } from '@tabler/icons-react';
 import { FileUploadZone } from '@/components/FileUploadZone';
+import { DatabaseStatus } from '@/components/DatabaseStatus';
 
 export default function HomePage() {
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
 
   return (
     <AppShell
@@ -47,10 +52,25 @@ export default function HomePage() {
               </div>
             </Group>
             
-            <Group>
+            <Group gap="md">
               <Text size="sm" c="dimmed">
                 KVKK Uyumlu Kişisel Veri Analizi
               </Text>
+              
+              <Tooltip label={colorScheme === 'dark' ? 'Açık tema' : 'Koyu tema'}>
+                <ActionIcon
+                  onClick={toggleColorScheme}
+                  variant="default"
+                  size="lg"
+                  aria-label="Tema değiştir"
+                >
+                  {colorScheme === 'dark' ? (
+                    <IconSun size={18} />
+                  ) : (
+                    <IconMoon size={18} />
+                  )}
+                </ActionIcon>
+              </Tooltip>
             </Group>
           </Group>
         </Container>
@@ -64,6 +84,7 @@ export default function HomePage() {
               icon={<IconAlertTriangle size={16} />}
               title="KVKK Uyumluluk Uyarısı"
               color="orange"
+              variant="light"
             >
               Bu sistem kişisel verileri tespit eder ve maskeler. Lütfen dosyalarınızın güvenliğini sağlamak için 
               gerekli önlemleri alın ve sadece yetkili kişilerin erişimine izin verin.
@@ -72,13 +93,13 @@ export default function HomePage() {
             {/* Sistem Özellikleri */}
             <Grid>
               <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-                <Card withBorder>
+                <Card withBorder shadow="sm" padding="lg" radius="md">
                   <Group justify="space-between">
                     <div>
                       <Text c="dimmed" size="sm" fw={500}>
                         Tespit Türleri
                       </Text>
-                      <Text fw={700} size="xl">
+                      <Text fw={700} size="xl" c="blue">
                         9 Farklı
                       </Text>
                     </div>
@@ -88,13 +109,13 @@ export default function HomePage() {
               </Grid.Col>
 
               <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-                <Card withBorder>
+                <Card withBorder shadow="sm" padding="lg" radius="md">
                   <Group justify="space-between">
                     <div>
                       <Text c="dimmed" size="sm" fw={500}>
                         Dosya Türleri
                       </Text>
-                      <Text fw={700} size="xl">
+                      <Text fw={700} size="xl" c="green">
                         TXT, CSV, PDF, IMG
                       </Text>
                     </div>
@@ -104,13 +125,13 @@ export default function HomePage() {
               </Grid.Col>
 
               <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-                <Card withBorder>
+                <Card withBorder shadow="sm" padding="lg" radius="md">
                   <Group justify="space-between">
                     <div>
                       <Text c="dimmed" size="sm" fw={500}>
                         Analiz Yöntemi
                       </Text>
-                      <Text fw={700} size="xl">
+                      <Text fw={700} size="xl" c="orange">
                         AI + Regex
                       </Text>
                     </div>
@@ -120,13 +141,13 @@ export default function HomePage() {
               </Grid.Col>
 
               <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-                <Card withBorder>
+                <Card withBorder shadow="sm" padding="lg" radius="md">
                   <Group justify="space-between">
                     <div>
                       <Text c="dimmed" size="sm" fw={500}>
                         Güvenlik
                       </Text>
-                      <Text fw={700} size="xl">
+                      <Text fw={700} size="xl" c="teal">
                         KVKK Uyumlu
                       </Text>
                     </div>
@@ -136,12 +157,15 @@ export default function HomePage() {
               </Grid.Col>
             </Grid>
 
+            {/* Veritabanı Durumu */}
+            <DatabaseStatus />
+
             {/* Ana Dosya Yükleme Alanı */}
-            <Card withBorder>
-              <Card.Section withBorder inheritPadding py="xs">
+            <Card withBorder shadow="md" radius="lg">
+              <Card.Section withBorder inheritPadding py="md">
                 <Group justify="space-between">
-                  <Title order={3}>Kişisel Veri Analizi</Title>
-                  <Badge variant="light" color="blue">
+                  <Title order={3} c="blue">Kişisel Veri Analizi</Title>
+                  <Badge variant="light" color="blue" size="lg">
                     Gerçek Zamanlı Analiz
                   </Badge>
                 </Group>
@@ -152,11 +176,11 @@ export default function HomePage() {
             </Card>
 
             {/* Desteklenen Veri Türleri */}
-            <Card withBorder>
-              <Card.Section withBorder inheritPadding py="xs">
-                <Title order={4}>Tespit Edilen Kişisel Veri Türleri</Title>
+            <Card withBorder shadow="sm" radius="md">
+              <Card.Section withBorder inheritPadding py="md">
+                <Title order={4} c="teal">Tespit Edilen Kişisel Veri Türleri</Title>
               </Card.Section>
-              <Card.Section inheritPadding py="md">
+              <Card.Section inheritPadding py="lg">
                 <Grid>
                   <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
                     <Group gap="xs">

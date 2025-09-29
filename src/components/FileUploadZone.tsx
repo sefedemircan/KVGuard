@@ -202,7 +202,7 @@ export function FileUploadZone({}: FileUploadZoneProps) {
         {uploading && (
           <Stack gap="xs">
             <Text size="sm" c="dimmed">Dosya işleniyor...</Text>
-            <Progress value={progress} animated />
+            <Progress value={progress} animated color="blue" />
           </Stack>
         )}
 
@@ -227,10 +227,10 @@ export function FileUploadZone({}: FileUploadZoneProps) {
         {result && (
           <Stack gap="md">
             {/* Özet Bilgiler */}
-            <Paper p="md" withBorder>
-              <Group justify="space-between" mb="xs">
-                <Text fw={500}>İşleme Özeti</Text>
-                <Badge color="green" variant="light">
+            <Paper p="lg" withBorder shadow="sm" radius="md">
+              <Group justify="space-between" mb="md">
+                <Text fw={500} c="blue">İşleme Özeti</Text>
+                <Badge color="green" variant="light" size="lg">
                   Tamamlandı
                 </Badge>
               </Group>
@@ -238,26 +238,26 @@ export function FileUploadZone({}: FileUploadZoneProps) {
               <Group gap="xl">
                 <div>
                   <Text size="sm" c="dimmed">Tespit Edilen Veri</Text>
-                  <Text fw={700} size="lg">{result.detectedData.length}</Text>
+                  <Text fw={700} size="lg" c="green">{result.detectedData.length}</Text>
                 </div>
                 <div>
                   <Text size="sm" c="dimmed">OCR Güveni</Text>
-                  <Text fw={700} size="lg">{(result.ocrConfidence * 100).toFixed(1)}%</Text>
+                  <Text fw={700} size="lg" c="blue">{(result.ocrConfidence * 100).toFixed(1)}%</Text>
                 </div>
                 <div>
                   <Text size="sm" c="dimmed">İşlem Süresi</Text>
-                  <Text fw={700} size="lg">{result.processingTimeMs}ms</Text>
+                  <Text fw={700} size="lg" c="orange">{result.processingTimeMs}ms</Text>
                 </div>
               </Group>
             </Paper>
 
             {/* Tespit Edilen Veriler */}
             {result.detectedData.length > 0 && (
-              <Paper p="md" withBorder>
-                <Text fw={500} mb="xs">Tespit Edilen Kişisel Veriler</Text>
+              <Paper p="lg" withBorder shadow="sm" radius="md">
+                <Text fw={500} mb="md" c="teal">Tespit Edilen Kişisel Veriler</Text>
                 <Stack gap="xs">
                   {result.detectedData.map((data, index) => (
-                    <Group key={index} justify="space-between" p="xs" style={{ borderRadius: 4, backgroundColor: 'var(--mantine-color-gray-0)' }}>
+                    <Group key={index} justify="space-between" p="md" style={{ borderRadius: 8, backgroundColor: 'var(--mantine-color-dark-6)' }}>
                       <Group gap="xs">
                         <Badge color={DATA_TYPE_COLORS[data.type]} size="sm">
                           {DATA_TYPE_LABELS[data.type]}
@@ -285,8 +285,8 @@ export function FileUploadZone({}: FileUploadZoneProps) {
               </Tabs.List>
 
               <Tabs.Panel value="masked" pt="md">
-                <Paper p="md" withBorder style={{ backgroundColor: 'var(--mantine-color-green-0)' }}>
-                  <Text size="sm" c="dimmed" mb="xs">Maskelenmiş Metin (Güvenli)</Text>
+                <Paper p="lg" withBorder shadow="sm" radius="md" style={{ backgroundColor: 'var(--mantine-color-green-1)' }}>
+                  <Text size="sm" c="dimmed" mb="md">Maskelenmiş Metin (Güvenli)</Text>
                   <ScrollArea.Autosize mah={300}>
                     <Text size="sm" style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
                       {result.maskedText}
@@ -302,8 +302,8 @@ export function FileUploadZone({}: FileUploadZoneProps) {
                     <Text size="sm">Bu bölüm kişisel veriler içerir. Dikkatli olun!</Text>
                   </Group>
                 </Alert>
-                <Paper p="md" withBorder style={{ backgroundColor: 'var(--mantine-color-red-0)' }}>
-                  <Text size="sm" c="dimmed" mb="xs">Orijinal Metin (Hassas)</Text>
+                <Paper p="lg" withBorder shadow="sm" radius="md" style={{ backgroundColor: 'var(--mantine-color-red-1)' }}>
+                  <Text size="sm" c="dimmed" mb="md">Orijinal Metin (Hassas)</Text>
                   <ScrollArea.Autosize mah={300}>
                     <Text size="sm" style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
                       {result.originalText}
