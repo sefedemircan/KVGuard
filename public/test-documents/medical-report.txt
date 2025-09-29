@@ -1,0 +1,35 @@
+TIBBİ RAPOR
+
+Hasta Bilgileri:
+-------------------------------
+Ad Soyad: Dr. Elif Kılıç
+TC Kimlik No: 12987654321
+Doğum Tarihi: 18/06/1988
+Telefon: 0212 555 0123
+E-posta: elif.kilic@saglik.gov.tr
+
+Muayene Bilgileri:
+-------------------------------
+Muayene Tarihi: 15.01.2024
+Hasta Şikayeti: Göğüs ağrısı, nefes darlığı
+Fizik Muayene: Kalp sesleri düzenli, akciğer sesleri normal
+Tanı: Anksiyete bozukluğu
+
+Tedavi Önerisi:
+-------------------------------
+1. Alprazolam 0.5mg 2x1 (30 tablet)
+2. Sertralin 50mg 1x1 (28 tablet)
+3. 1 hafta sonra kontrol
+
+Doktor Bilgileri:
+-------------------------------
+Dr. Mehmet Özkan
+Uzmanlık: Kardiyoloji
+Diploma No: 123456
+Telefon: 0212 444 5566
+TC: 98765432101
+
+Hastane: Şişli Etfal Hastanesi
+Adres: Halaskargazi Cad. No:188 Şişli/İstanbul
+
+Bu rapor sadece test amaçlıdır ve gerçek tıbbi bilgi içermez.

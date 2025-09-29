@@ -1,0 +1,29 @@
+KİŞİSEL VERİ TEST DOSYASI - 1
+
+Müşteri Bilgileri:
+Ad Soyad: Ahmet Yılmaz
+TC Kimlik No: 12345678901
+Doğum Tarihi: 15.03.1985
+E-posta: ahmet.yilmaz@email.com
+Telefon: 0532 123 45 67
+
+Adres Bilgileri:
+Ev Adresi: Cumhuriyet Mahallesi, Atatürk Caddesi No:25/A Daire:5 Kadıköy/İstanbul
+
+Finansal Bilgiler:
+IBAN: TR12 3456 7890 1234 5678 9012 34
+Kredi Kartı: 4532 1234 5678 9012
+
+Sağlık Bilgileri:
+Hasta şikayet: Baş ağrısı ve mide bulantısı
+Reçete edilen ilaç: Parol 500mg
+Tanı: Migren
+
+İkinci Müşteri:
+Ad Soyad: Fatma Özdemir
+TC: 98765432109
+Telefon: +90 (533) 987-65-43
+Email: f.ozdemir@test.com
+Doğum: 22/08/1990
+
+Bu dosya test amaçlı oluşturulmuştur ve gerçek kişisel veriler içermez.

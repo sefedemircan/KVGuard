@@ -1,0 +1,34 @@
+FİNANSAL VERİ RAPORU
+
+Müşteri: Serkan Aydın
+TC: 11111111110
+Telefon: 0533-444-5566
+Email: serkan.aydin@bankatest.com
+
+Hesap Bilgileri:
+================
+Ana Hesap IBAN: TR33 0006 1005 1978 6457 8413 26
+Vadeli Hesap IBAN: TR64 0001 0012 9876 1234 5678 90
+Kredi Kartı: 5555 4444 3333 2222
+Son kullanma: 12/25
+CVV: 123
+
+İşlem Geçmişi:
+==============
+01.01.2024 - ATM Çekimi - 500 TL - Bakırköy Şubesi
+02.01.2024 - POS İşlemi - 1.250 TL - Migros AVM
+03.01.2024 - EFT Giden - 2.000 TL - Alıcı: Ayşe Yılmaz TC:22222222220
+
+Kredi Bilgileri:
+===============
+Kredi Tutarı: 150.000 TL
+Aylık Taksit: 3.456 TL
+Kalan Bakiye: 125.000 TL
+Garanti: Ev (Tapu No: 12345)
+
+Adres: Bağdat Caddesi No:456/7 Kadıköy İstanbul
+Doğum Tarihi: 25.12.1980
+
+İletişim: 0212-555-7788 (ev), 0533-444-5566 (cep)
+
+Bu veriler test amaçlıdır ve gerçek finansal bilgi içermez.
