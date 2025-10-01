@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, Text, Badge, Group, Stack, Button, Alert } from '@mantine/core';
-import { IconDatabase, IconCheck, IconX, IconRefresh } from '@tabler/icons-react';
+import { Card, Text, Badge, Group, Stack, Button, Alert, Paper, ThemeIcon, Divider, useMantineColorScheme } from '@mantine/core';
+import { IconDatabase, IconCheck, IconX, IconRefresh, IconTrendingUp } from '@tabler/icons-react';
 import { DatabaseService } from '@/lib/supabase';
 
 interface DatabaseStatusProps {}
@@ -16,6 +16,7 @@ interface StatusInfo {
 }
 
 export function DatabaseStatus({}: DatabaseStatusProps) {
+  const { colorScheme } = useMantineColorScheme();
   const [status, setStatus] = useState<StatusInfo>({
     connected: false,
     tablesExist: false,
@@ -63,73 +64,147 @@ export function DatabaseStatus({}: DatabaseStatusProps) {
   }, []);
 
   return (
-    <Card withBorder shadow="sm" radius="md">
-      <Card.Section withBorder inheritPadding py="md">
-        <Group justify="space-between">
-          <Group gap="xs">
-            <IconDatabase size={20} color="var(--mantine-color-blue-6)" />
-            <Text fw={500} c="blue">Veritabanı Durumu</Text>
+    <Paper
+      p="xl"
+      radius="xl"
+      shadow="lg"
+      style={{
+        background: colorScheme === 'dark' 
+          ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
+          : 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+      }}
+    >
+      <Stack gap="lg">
+        <Group justify="space-between" align="center">
+          <Group gap="md">
+            <ThemeIcon
+              size={40}
+              radius="xl"
+              variant="gradient"
+              gradient={{ from: 'blue', to: 'cyan' }}
+            >
+              <IconDatabase size={22} />
+            </ThemeIcon>
+            <div>
+              <Text fw={700} c="blue" size="lg">
+                Veritabanı Durumu
+              </Text>
+              <Text c="dimmed" size="sm">
+                Sistem bağlantı ve performans bilgileri
+              </Text>
+            </div>
           </Group>
           <Button
-            variant="light"
-            size="xs"
-            leftSection={<IconRefresh size={14} />}
+            variant="gradient"
+            gradient={{ from: 'blue', to: 'cyan' }}
+            size="sm"
+            leftSection={<IconRefresh size={16} />}
             onClick={checkDatabaseStatus}
             loading={loading}
-            color="blue"
+            radius="xl"
           >
             Yenile
           </Button>
         </Group>
-      </Card.Section>
+        
+        <Divider />
 
-      <Card.Section inheritPadding py="lg">
-        <Stack gap="sm">
+        <Stack gap="md">
           {status.error ? (
-            <Alert color="red" icon={<IconX size={16} />}>
+            <Alert color="red" icon={<IconX size={16} />} radius="lg">
               <Text size="sm">{status.error}</Text>
             </Alert>
           ) : (
             <>
-              <Group justify="space-between">
-                <Text size="sm">Bağlantı Durumu:</Text>
+              <Group justify="space-between" align="center">
+                <Group gap="xs">
+                  <ThemeIcon
+                    size={24}
+                    radius="xl"
+                    color={status.connected ? 'green' : 'red'}
+                    variant="light"
+                  >
+                    {status.connected ? <IconCheck size={14} /> : <IconX size={14} />}
+                  </ThemeIcon>
+                  <Text size="sm" fw={500}>Bağlantı Durumu</Text>
+                </Group>
                 <Badge 
-                  color={status.connected ? 'green' : 'red'}
-                  leftSection={status.connected ? <IconCheck size={12} /> : <IconX size={12} />}
+                  variant="gradient"
+                  gradient={status.connected ? 
+                    { from: 'teal', to: 'green' } : 
+                    { from: 'red', to: 'pink' }
+                  }
+                  size="lg"
                 >
-                  {status.connected ? 'Bağlı' : 'Bağlantı Yok'}
+                  {status.connected ? 'Aktif' : 'Bağlantı Yok'}
                 </Badge>
               </Group>
 
-              <Group justify="space-between">
-                <Text size="sm">Tablolar:</Text>
+              <Group justify="space-between" align="center">
+                <Group gap="xs">
+                  <ThemeIcon
+                    size={24}
+                    radius="xl"
+                    color={status.tablesExist ? 'green' : 'red'}
+                    variant="light"
+                  >
+                    {status.tablesExist ? <IconCheck size={14} /> : <IconX size={14} />}
+                  </ThemeIcon>
+                  <Text size="sm" fw={500}>Veri Tabloları</Text>
+                </Group>
                 <Badge 
-                  color={status.tablesExist ? 'green' : 'red'}
-                  leftSection={status.tablesExist ? <IconCheck size={12} /> : <IconX size={12} />}
+                  variant="gradient"
+                  gradient={status.tablesExist ? 
+                    { from: 'teal', to: 'green' } : 
+                    { from: 'red', to: 'pink' }
+                  }
+                  size="lg"
                 >
-                  {status.tablesExist ? 'Mevcut' : 'Bulunamadı'}
+                  {status.tablesExist ? 'Hazır' : 'Bulunamadı'}
                 </Badge>
               </Group>
 
-              <Group justify="space-between">
-                <Text size="sm">Toplam İşlenen Dosya:</Text>
-                <Badge variant="light" color="blue">
-                  {status.totalFiles}
+              <Group justify="space-between" align="center">
+                <Group gap="xs">
+                  <ThemeIcon
+                    size={24}
+                    radius="xl"
+                    color="blue"
+                    variant="light"
+                  >
+                    <IconTrendingUp size={14} />
+                  </ThemeIcon>
+                  <Text size="sm" fw={500}>İşlenen Dosya</Text>
+                </Group>
+                <Badge 
+                  variant="gradient"
+                  gradient={{ from: 'blue', to: 'cyan' }}
+                  size="lg"
+                >
+                  {status.totalFiles} Dosya
                 </Badge>
               </Group>
 
               {status.lastProcessedFile && (
-                <Group justify="space-between">
-                  <Text size="sm">Son İşlenen:</Text>
-                  <Text size="xs" c="dimmed">
-                    {status.lastProcessedFile.file_name}
-                  </Text>
-                </Group>
+                <>
+                  <Divider variant="dashed" />
+                  <Group justify="space-between" align="center">
+                    <Text size="sm" fw={500} c="dimmed">Son İşlenen Dosya:</Text>
+                    <Text size="sm" c="blue" fw={600} style={{ 
+                      maxWidth: '200px', 
+                      overflow: 'hidden', 
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {status.lastProcessedFile.file_name}
+                    </Text>
+                  </Group>
+                </>
               )}
             </>
           )}
         </Stack>
-      </Card.Section>
-    </Card>
+      </Stack>
+    </Paper>
   );
 }
