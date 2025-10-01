@@ -338,4 +338,15 @@ export class DatabaseService {
     if (error) throw error;
     return data;
   }
+
+  // Toplam işlenen dosya sayısını direkt processed_files tablosundan al
+  static async getTotalProcessedFilesCount() {
+    const { count, error } = await typedSupabase
+      .from('processed_files')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'completed');
+
+    if (error) throw error;
+    return count || 0;
+  }
 }

@@ -30,11 +30,20 @@ export function DatabaseStatus({}: DatabaseStatusProps) {
       const files = await DatabaseService.getProcessedFiles(1);
       const stats = await DatabaseService.getStatisticsSummary();
       
+      // Eğer statistics tablosu boşsa, direkt processed_files tablosundan say
+      let totalFiles = 0;
+      if (stats && stats.length > 0) {
+        totalFiles = stats.reduce((sum, s) => sum + s.total_files_processed, 0);
+      } else {
+        // Statistics tablosu boşsa, direkt processed_files tablosundan toplam sayıyı al
+        totalFiles = await DatabaseService.getTotalProcessedFilesCount();
+      }
+      
       setStatus({
         connected: true,
         tablesExist: true,
         lastProcessedFile: files && files.length > 0 ? files[0] : null,
-        totalFiles: stats && stats.length > 0 ? stats.reduce((sum, s) => sum + s.total_files_processed, 0) : 0
+        totalFiles: totalFiles
       });
     } catch (error) {
       console.error('Database status check failed:', error);

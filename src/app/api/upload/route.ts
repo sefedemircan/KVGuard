@@ -198,6 +198,12 @@ export async function POST(request: NextRequest) {
 
 // İstatistikleri güncelleme fonksiyonu
 async function updateDailyStatistics(date: Date, detectedData: any[], processingTimeMs: number) {
+  console.log('Updating daily statistics...', {
+    date: date.toISOString(),
+    detectedDataCount: detectedData.length,
+    processingTimeMs
+  });
+
   const today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   
   // Veri türü breakdown'unu hazırla
@@ -220,47 +226,73 @@ async function updateDailyStatistics(date: Date, detectedData: any[], processing
     }
   });
 
+  console.log('Data type breakdown:', dataTypeBreakdown);
+
   // Ortalama güven skorunu hesapla
   const averageConfidence = detectedData.length > 0 
     ? detectedData.reduce((sum, item) => sum + item.confidence, 0) / detectedData.length
     : 0;
 
-  // Mevcut günün istatistiklerini al
-  const existingStats = await DatabaseService.getStatistics(today, today);
-  
-  if (existingStats && existingStats.length > 0) {
-    // Mevcut istatistikleri güncelle
-    const current = existingStats[0] as any;
-    const newTotalFiles = current.total_files_processed + 1;
-    const newTotalData = current.total_data_detected + detectedData.length;
-    
-    // Veri türü breakdown'unu güncelle
-    const currentBreakdown = current.data_type_breakdown || {};
-    Object.entries(dataTypeBreakdown).forEach(([type, count]) => {
-      currentBreakdown[type] = (currentBreakdown[type] || 0) + count;
-    });
-    
-    // Ortalama güven ve işlem süresini güncelle
-    const newAverageConfidence = ((current.average_confidence * (newTotalFiles - 1)) + averageConfidence) / newTotalFiles;
-    const newProcessingTime = ((current.processing_time_ms * (newTotalFiles - 1)) + processingTimeMs) / newTotalFiles;
+  console.log('Average confidence:', averageConfidence);
 
-    await DatabaseService.createOrUpdateStatistics({
-      date: today,
-      totalFilesProcessed: newTotalFiles,
-      totalDataDetected: newTotalData,
-      dataTypeBreakdown: currentBreakdown,
-      averageConfidence: newAverageConfidence,
-      processingTimeMs: Math.round(newProcessingTime)
-    });
-  } else {
-    // Yeni istatistik kaydı oluştur
-    await DatabaseService.createOrUpdateStatistics({
-      date: today,
-      totalFilesProcessed: 1,
-      totalDataDetected: detectedData.length,
-      dataTypeBreakdown: dataTypeBreakdown,
-      averageConfidence: averageConfidence,
-      processingTimeMs: processingTimeMs
-    });
+  try {
+    // Mevcut günün istatistiklerini al
+    const existingStats = await DatabaseService.getStatistics(today, today);
+    console.log('Existing stats found:', existingStats?.length || 0);
+    
+    if (existingStats && existingStats.length > 0) {
+      // Mevcut istatistikleri güncelle
+      const current = existingStats[0] as any;
+      const newTotalFiles = current.total_files_processed + 1;
+      const newTotalData = current.total_data_detected + detectedData.length;
+      
+      // Veri türü breakdown'unu güncelle
+      const currentBreakdown = current.data_type_breakdown || {};
+      Object.entries(dataTypeBreakdown).forEach(([type, count]) => {
+        currentBreakdown[type] = (currentBreakdown[type] || 0) + count;
+      });
+      
+      // Ortalama güven ve işlem süresini güncelle
+      const newAverageConfidence = ((current.average_confidence * (newTotalFiles - 1)) + averageConfidence) / newTotalFiles;
+      const newProcessingTime = ((current.processing_time_ms * (newTotalFiles - 1)) + processingTimeMs) / newTotalFiles;
+
+      console.log('Updating existing statistics:', {
+        newTotalFiles,
+        newTotalData,
+        newAverageConfidence,
+        newProcessingTime: Math.round(newProcessingTime)
+      });
+
+      await DatabaseService.createOrUpdateStatistics({
+        date: today,
+        totalFilesProcessed: newTotalFiles,
+        totalDataDetected: newTotalData,
+        dataTypeBreakdown: currentBreakdown,
+        averageConfidence: newAverageConfidence,
+        processingTimeMs: Math.round(newProcessingTime)
+      });
+    } else {
+      // Yeni istatistik kaydı oluştur
+      console.log('Creating new statistics record:', {
+        totalFilesProcessed: 1,
+        totalDataDetected: detectedData.length,
+        averageConfidence,
+        processingTimeMs
+      });
+
+      await DatabaseService.createOrUpdateStatistics({
+        date: today,
+        totalFilesProcessed: 1,
+        totalDataDetected: detectedData.length,
+        dataTypeBreakdown: dataTypeBreakdown,
+        averageConfidence: averageConfidence,
+        processingTimeMs: processingTimeMs
+      });
+    }
+
+    console.log('Statistics updated successfully');
+  } catch (error) {
+    console.error('Error updating statistics:', error);
+    throw error; // Re-throw to be caught by the calling function
   }
 }
