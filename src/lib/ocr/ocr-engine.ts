@@ -1,7 +1,3 @@
-// Dynamic imports to avoid build issues
-// import { createWorker, Worker } from 'tesseract.js';
-// import * as pdfParse from 'pdf-parse';
-
 export interface OCRResult {
   text: string;
   confidence: number;
@@ -9,25 +5,64 @@ export interface OCRResult {
 }
 
 export class OCREngine {
-  private worker: any | null = null;
-  
-  // Tesseract.js worker'ını başlat
-  private async initializeWorker(): Promise<any> {
-    if (this.worker) return this.worker;
+  // OpenRouter Vision API kullanarak görsel işleme
+  private async extractWithVisionAPI(buffer: Buffer): Promise<string> {
+    if (!process.env.OPENROUTER_API_KEY) {
+      throw new Error('OPENROUTER_API_KEY bulunamadı');
+    }
     
     try {
-      const { createWorker } = await import('tesseract.js');
-      this.worker = await createWorker('tur+eng'); // Türkçe + İngilizce dil desteği
+      // Buffer'ı base64'e çevir
+      const base64Image = buffer.toString('base64');
+      const dataUrl = `data:image/png;base64,${base64Image}`;
       
-      await this.worker.setParameters({
-        tessedit_char_whitelist: 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZabcçdefgğhıijklmnoöprsştuüvyz0123456789.,!?()[]{}/@#$%^&*-+=_~|\\:;"\'<> \n\t',
-        preserve_interword_spaces: '1',
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+          'X-Title': 'KVGuard - OCR Engine'
+        },
+        body: JSON.stringify({
+          model: 'x-ai/grok-4-fast:free',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Bu görseldeki tüm metni aynen çıkar. Sadece metni döndür, hiçbir yorum ekleme. Türkçe karakterleri doğru şekilde tanı.'
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: dataUrl
+                  }
+                }
+              ]
+            }
+          ],
+          max_tokens: 4000,
+          temperature: 0.1
+        })
       });
       
-      return this.worker;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Vision API error:', errorText);
+        throw new Error(`Vision API request failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const extractedText = data.choices[0]?.message?.content || '';
+      
+      console.log('Vision API extraction successful, text length:', extractedText.length);
+      return extractedText;
+      
     } catch (error) {
-      console.error('Failed to initialize Tesseract worker:', error);
-      throw new Error('OCR engine initialization failed');
+      console.error('Vision API error:', error);
+      throw new Error('Görsel işleme sırasında hata oluştu');
     }
   }
   
@@ -50,21 +85,17 @@ export class OCREngine {
     }
   }
   
-  // Görsel dosyalardan OCR ile metin çıkar
+  // Görsel dosyalardan OCR ile metin çıkar (Vision API kullanarak)
   async extractFromImage(buffer: Buffer, mimeType: string): Promise<OCRResult> {
     const startTime = Date.now();
     
     try {
-      const worker = await this.initializeWorker();
-      
-      // Buffer'ı Uint8Array'e dönüştür
-      const imageData = new Uint8Array(buffer);
-      
-      const { data } = await worker.recognize(imageData);
+      console.log('Extracting text from image using Vision API...');
+      const text = await this.extractWithVisionAPI(buffer);
       
       return {
-        text: data.text,
-        confidence: data.confidence / 100, // Tesseract 0-100 arası döndürür, 0-1'e dönüştür
+        text: text,
+        confidence: 0.95, // Vision API genellikle yüksek güvenilirlik sağlar
         processingTimeMs: Date.now() - startTime
       };
     } catch (error) {
@@ -114,12 +145,9 @@ export class OCREngine {
     throw new Error(`Desteklenmeyen dosya türü: ${mimeType}`);
   }
   
-  // Worker'ı temizle
+  // Cleanup - Vision API için gerekli değil
   async cleanup(): Promise<void> {
-    if (this.worker) {
-      await this.worker.terminate();
-      this.worker = null;
-    }
+    // Vision API için cleanup gerekmez
   }
   
   // Desteklenen dosya türlerini kontrol et

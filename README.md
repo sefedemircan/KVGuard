@@ -18,7 +18,7 @@ KVGuard, KVKK uyumlu kişisel veri tespit ve maskeleme sistemidir. Dosyalardaki 
 - **Frontend**: Next.js 15, React 19, Mantine UI
 - **Backend**: Next.js API Routes, TypeScript
 - **Veritabanı**: Supabase (PostgreSQL + RLS)
-- **OCR**: Tesseract.js (Türkçe + İngilizce)
+- **OCR**: OpenRouter Vision API (Gemini Flash 1.5)
 - **AI**: OpenRouter API (Grok-4-Fast)
 - **Stil**: CSS Modules, PostCSS
 

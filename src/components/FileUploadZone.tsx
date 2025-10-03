@@ -5,6 +5,7 @@ import {
   Group,
   Text,
   useMantineTheme,
+  useMantineColorScheme,
   rem,
   Stack,
   Button,
@@ -73,6 +74,7 @@ const DATA_TYPE_COLORS: Record<PersonalDataType, string> = {
 
 export function FileUploadZone({}: FileUploadZoneProps) {
   const theme = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ProcessingResult | null>(null);
@@ -257,7 +259,17 @@ export function FileUploadZone({}: FileUploadZoneProps) {
                 <Text fw={500} mb="md" c="teal">Tespit Edilen Kişisel Veriler</Text>
                 <Stack gap="xs">
                   {result.detectedData.map((data, index) => (
-                    <Group key={index} justify="space-between" p="md" style={{ borderRadius: 8, backgroundColor: 'var(--mantine-color-dark-6)' }}>
+                    <Group 
+                      key={index} 
+                      justify="space-between" 
+                      p="md" 
+                      style={{ 
+                        borderRadius: 8, 
+                        backgroundColor: colorScheme === 'dark' 
+                          ? 'var(--mantine-color-dark-6)' 
+                          : 'var(--mantine-color-gray-0)'
+                      }}
+                    >
                       <Group gap="xs">
                         <Badge color={DATA_TYPE_COLORS[data.type]} size="sm">
                           {DATA_TYPE_LABELS[data.type]}
@@ -285,8 +297,14 @@ export function FileUploadZone({}: FileUploadZoneProps) {
               </Tabs.List>
 
               <Tabs.Panel value="masked" pt="md">
-                <Paper p="lg" withBorder shadow="sm" radius="md" style={{ backgroundColor: 'var(--mantine-color-green-1)' }}>
-                  <Text size="sm" c="dimmed" mb="md">Maskelenmiş Metin (Güvenli)</Text>
+                <Paper 
+                  p="lg" 
+                  bg={colorScheme === 'dark' ? 'dark.6' : 'gray.0'} 
+                  withBorder 
+                  shadow="sm" 
+                  radius="md"
+                >
+                  <Text fw={600} size="sm" c="dimmed" mb="md">Maskelenmiş Metin (Güvenli)</Text>
                   <ScrollArea.Autosize mah={300}>
                     <Text size="sm" style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
                       {result.maskedText}
@@ -302,8 +320,14 @@ export function FileUploadZone({}: FileUploadZoneProps) {
                     <Text size="sm">Bu bölüm kişisel veriler içerir. Dikkatli olun!</Text>
                   </Group>
                 </Alert>
-                <Paper p="lg" withBorder shadow="sm" radius="md" style={{ backgroundColor: 'var(--mantine-color-red-1)' }}>
-                  <Text size="sm" c="dimmed" mb="md">Orijinal Metin (Hassas)</Text>
+                <Paper 
+                  p="lg" 
+                  bg={colorScheme === 'dark' ? 'dark.6' : 'gray.0'} 
+                  withBorder 
+                  shadow="sm" 
+                  radius="md"
+                >
+                  <Text fw={600} size="sm" c="dimmed" mb="md">Orijinal Metin (Hassas)</Text>
                   <ScrollArea.Autosize mah={300}>
                     <Text size="sm" style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
                       {result.originalText}
