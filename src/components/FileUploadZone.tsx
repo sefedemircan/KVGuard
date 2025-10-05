@@ -36,6 +36,8 @@ import {
   IconCheck
 } from '@tabler/icons-react';
 import { DetectedPersonalData, PersonalDataType } from '@/lib/models';
+import { ExportButton } from './ExportButton';
+import { ComparisonSlider } from './ComparisonSlider';
 
 interface FileUploadZoneProps {}
 
@@ -286,8 +288,11 @@ export function FileUploadZone({}: FileUploadZoneProps) {
             )}
 
             {/* Metin Karşılaştırması */}
-            <Tabs defaultValue="masked" keepMounted={false}>
+            <Tabs defaultValue="comparison" keepMounted={false}>
               <Tabs.List>
+                <Tabs.Tab value="comparison" leftSection={<IconShield size={14} />}>
+                  Karşılaştırma
+                </Tabs.Tab>
                 <Tabs.Tab value="masked" leftSection={<IconShield size={14} />}>
                   Maskelenmiş Metin
                 </Tabs.Tab>
@@ -295,6 +300,14 @@ export function FileUploadZone({}: FileUploadZoneProps) {
                   Orijinal Metin
                 </Tabs.Tab>
               </Tabs.List>
+
+              <Tabs.Panel value="comparison" pt="md">
+                <ComparisonSlider 
+                  originalText={result.originalText}
+                  maskedText={result.maskedText}
+                  detectedCount={result.detectedData.length}
+                />
+              </Tabs.Panel>
 
               <Tabs.Panel value="masked" pt="md">
                 <Paper 
@@ -337,7 +350,12 @@ export function FileUploadZone({}: FileUploadZoneProps) {
               </Tabs.Panel>
             </Tabs>
 
-            <Group justify="flex-end" mt="md">
+            <Group justify="space-between" mt="md">
+              <ExportButton 
+                fileId={result.fileId} 
+                fileName={`processed_${Date.now()}`}
+                variant="light"
+              />
               <Button variant="light" onClick={close}>
                 Kapat
               </Button>
